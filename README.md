@@ -21,6 +21,20 @@ This project was developed during my internship while learning Dynamics 365 Fina
 - Parameter form for module setup
 - Test classes for order table and line behavior
 
+## Screenshots
+
+### Sales Order Form
+
+![Sales order form](screenshots/sales-order-form.jpg)
+
+### Approval Flow
+
+![Order approval flow](screenshots/order-approval-flow.jpg)
+
+### Line Validation
+
+![Sales order line validation](screenshots/sales-order-line-validation.jpg)
+
 ## Tech Stack
 
 - Microsoft Dynamics 365 Finance & Operations
