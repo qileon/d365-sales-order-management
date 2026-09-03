@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AxClass xmlns:i="http://www.w3.org/2001/XMLSchema-instance">
+	<Name>SOrderRecalculateController</Name>
+	<SourceCode>
+		<Declaration><![CDATA[
+/// <summary>
+/// Controller class for order total recalculation SysOperation.
+/// </summary>
+internal final class SOrderRecalculateController extends SysOperationServiceController
+{
+}
+]]></Declaration>
+		<Methods>
+			<Method>
+				<Name>new</Name>
+				<Source><![CDATA[
+    /// <summary>
+    /// Initializes the controller with synchronous execution mode.
+    /// </summary>
+    protected void new()
+    {
+        super(
+            classStr(SOrderRecalculateService),
+            methodStr(SOrderRecalculateService, process),
+            SysOperationExecutionMode::Synchronous);
+    }
+
+]]></Source>
+			</Method>
+			<Method>
+				<Name>main</Name>
+				<Source><![CDATA[
+    /// <summary>
+    /// Main entry point for the recalculation operation.
+    /// </summary>
+    /// <param name="_args">Standard form arguments.</param>
+    public static void main(Args _args)
+    {
+        SOrderRecalculateController controller;
+        controller = new SOrderRecalculateController();
+        controller.parmArgs(_args);
+        controller.startOperation();
+    }
+
+]]></Source>
+			</Method>
+		</Methods>
+	</SourceCode>
+</AxClass>

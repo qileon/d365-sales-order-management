@@ -1,0 +1,215 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AxClass xmlns:i="http://www.w3.org/2001/XMLSchema-instance">
+	<Name>SOrderLineTest_Unit</Name>
+	<SourceCode>
+		<Declaration><![CDATA[
+/// <summary>
+/// Unit test class for SOrderLine validation and SOrderService business logic.
+/// </summary>
+internal final class SOrderLineTest_Unit extends SysTestCase
+{
+}
+]]></Declaration>
+		<Methods>
+			<Method>
+				<Name>testQuantityMustBePositive</Name>
+				<Source><![CDATA[
+    /// <summary>
+    /// Tests that Quantity of zero is rejected.
+    /// </summary>
+    [SysTestMethodAttribute]
+    public void testQuantityMustBePositive()
+    {
+        SOrderLine orderLine;
+
+        orderLine.Quantity = 0;
+
+        this.assertFalse(orderLine.validateField(fieldNum(SOrderLine, Quantity)));
+    }
+
+]]></Source>
+			</Method>
+			<Method>
+				<Name>testMaximumLineCountExceeded</Name>
+				<Source><![CDATA[
+    /// <summary>
+    /// Tests that a 6th line on the same order is rejected.
+    /// </summary>
+    [SysTestMethodAttribute]
+    public void testMaximumLineCountExceeded()
+    {
+        SOrderTable orderTable;
+        SOrderLine orderLine;
+        CustTable custTable;
+        InventTable inventTable;
+        int i;
+        boolean sixthLineIsValid;
+
+        ttsBegin;
+
+        select firstOnly custTable;
+        select firstOnly inventTable;
+
+        orderTable.OrderID = "@SLabels:SOrderIdPrefix" + int2str(DateTimeUtil::getTimeNow(DateTimeUtil::getUserPreferredTimeZone()));
+        orderTable.CustAccount = custTable.AccountNum;
+        orderTable.OrderDate = DateTimeUtil::getSystemDate(DateTimeUtil::getUserPreferredTimeZone());
+        orderTable.Status = SOrderStatus::Draft;
+        orderTable.TotalAmount = 0;
+        orderTable.insert();
+
+        for (i = 1; i <= 5; i++)
+        {
+            orderLine.clear();
+            orderLine.OrderID = orderTable.OrderID;
+            orderLine.ItemID = inventTable.ItemId;
+            orderLine.Quantity = 1;
+            orderLine.UnitPrice = 10;
+            orderLine.insert();
+        }
+
+        orderLine.clear();
+        orderLine.OrderID = orderTable.OrderID;
+        orderLine.ItemID = inventTable.ItemId;
+        orderLine.Quantity = 1;
+        orderLine.UnitPrice = 10;
+
+        sixthLineIsValid = orderLine.validateWrite();
+
+        ttsAbort;
+
+        this.assertFalse(sixthLineIsValid);
+    }
+
+]]></Source>
+			</Method>
+			<Method>
+				<Name>testApproveOrderWithNoLinesFails</Name>
+				<Source><![CDATA[
+    /// <summary>
+    /// Tests that approving an order with no lines throws an error.
+    /// </summary>
+    [SysTestMethodAttribute]
+    public void testApproveOrderWithNoLinesFails()
+    {
+        SOrderTable orderTable;
+        CustTable custTable;
+        boolean exceptionThrown;
+
+        exceptionThrown = false;
+
+        try
+        {
+            ttsBegin;
+
+            select firstOnly custTable;
+
+            orderTable.OrderID = "@SLabels:SOrderIdPrefix" + int2str(DateTimeUtil::getTimeNow(DateTimeUtil::getUserPreferredTimeZone()));
+            orderTable.CustAccount = custTable.AccountNum;
+            orderTable.OrderDate = DateTimeUtil::getSystemDate(DateTimeUtil::getUserPreferredTimeZone());
+            orderTable.Status = SOrderStatus::Draft;
+            orderTable.TotalAmount = 0;
+            orderTable.insert();
+
+            SOrderService::approveOrder(orderTable.OrderID);
+
+            ttsCommit;
+        }
+        catch (Exception::Error)
+        {
+            exceptionThrown = true;
+        }
+
+        this.assertTrue(exceptionThrown);
+    }
+
+]]></Source>
+			</Method>
+			<Method>
+				<Name>testApproveOrderWithValidLineSucceeds</Name>
+				<Source><![CDATA[
+    /// <summary>
+    /// Tests that an order with a valid line can be approved successfully.
+    /// </summary>
+    [SysTestMethodAttribute]
+    public void testApproveOrderWithValidLineSucceeds()
+    {
+        SOrderTable orderTable;
+        SOrderLine orderLine;
+        CustTable custTable;
+        InventTable inventTable;
+
+        ttsBegin;
+
+        select firstOnly custTable;
+        select firstOnly inventTable;
+
+        orderTable.OrderID = "@SLabels:SOrderIdPrefix" + int2str(DateTimeUtil::getTimeNow(DateTimeUtil::getUserPreferredTimeZone()));
+        orderTable.CustAccount = custTable.AccountNum;
+        orderTable.OrderDate = DateTimeUtil::getSystemDate(DateTimeUtil::getUserPreferredTimeZone());
+        orderTable.Status = SOrderStatus::Draft;
+        orderTable.TotalAmount = 0;
+        orderTable.insert();
+
+        orderLine.OrderID = orderTable.OrderID;
+        orderLine.ItemID = inventTable.ItemId;
+        orderLine.Quantity = 1;
+        orderLine.UnitPrice = 10;
+        orderLine.insert();
+
+        SOrderService::approveOrder(orderTable.OrderID);
+
+        orderTable.reread();
+
+        this.assertEquals(SOrderStatus::Approved, orderTable.Status);
+
+        ttsAbort;
+    }
+
+]]></Source>
+			</Method>
+			<Method>
+				<Name>testCancelNonDraftOrderFails</Name>
+				<Source><![CDATA[
+    /// <summary>
+    /// Tests that cancelling an already-cancelled order throws an error.
+    /// </summary>
+    [SysTestMethodAttribute]
+    public void testCancelNonDraftOrderFails()
+    {
+        SOrderTable orderTable;
+        CustTable custTable;
+        boolean exceptionThrown;
+
+        exceptionThrown = false;
+
+        try
+        {
+            ttsBegin;
+
+            select firstOnly custTable;
+
+            orderTable.OrderID = "@SLabels:SOrderIdPrefix" + int2str(DateTimeUtil::getTimeNow(DateTimeUtil::getUserPreferredTimeZone()));
+            orderTable.CustAccount = custTable.AccountNum;
+            orderTable.OrderDate = DateTimeUtil::getSystemDate(DateTimeUtil::getUserPreferredTimeZone());
+            orderTable.Status = SOrderStatus::Draft;
+            orderTable.TotalAmount = 0;
+            orderTable.insert();
+
+            SOrderService::cancelOrder(orderTable.OrderID);
+            SOrderService::cancelOrder(orderTable.OrderID);
+
+            ttsCommit;
+        }
+        catch (Exception::Error)
+        {
+            exceptionThrown = true;
+        }
+
+        this.assertTrue(exceptionThrown);
+    }
+
+]]></Source>
+			</Method>
+		</Methods>
+	</SourceCode>
+</AxClass>

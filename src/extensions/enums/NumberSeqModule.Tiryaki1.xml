@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AxEnumExtension xmlns:i="http://www.w3.org/2001/XMLSchema-instance">
+	<Name>NumberSeqModule.Tiryaki1</Name>
+	<EnumValues>
+		<AxEnumValue>
+			<Name>SOrder</Name>
+			<Label>@SLabels:SOrderModule</Label>
+		</AxEnumValue>
+	</EnumValues>
+	<PropertyModifications />
+	<ValueModifications />
+</AxEnumExtension>

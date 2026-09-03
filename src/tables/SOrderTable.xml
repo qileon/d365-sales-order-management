@@ -1,0 +1,390 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AxTable xmlns:i="http://www.w3.org/2001/XMLSchema-instance">
+	<Name>SOrderTable</Name>
+	<SourceCode>
+		<Declaration><![CDATA[
+public class SOrderTable extends Common
+{
+}
+]]></Declaration>
+		<Methods>
+			<Method>
+				<Name>shouldThrowExceptionOnZeroDelete</Name>
+				<Source><![CDATA[
+    public boolean shouldThrowExceptionOnZeroDelete()
+    {
+        return true;
+    }
+
+]]></Source>
+			</Method>
+			<Method>
+				<Name>initValue</Name>
+				<Source><![CDATA[
+    /// <summary>
+    /// Initializes default values for a new sales order.
+    /// </summary>
+    public void initValue()
+    {
+        SOrderNumberSequence numberSequenceCode;
+
+        super();
+
+        numberSequenceCode = SOrderParameters::find().OrderIdNumberSequence;
+
+        if (numberSequenceCode)
+        {
+            this.OrderID = NumberSeq::newGetNumFromCode(
+                numberSequenceCode,
+                NumberSeqScopeFactory::createGlobalScope()).num();
+        }
+
+        this.OrderDate = DateTimeUtil::getSystemDate(
+            DateTimeUtil::getUserPreferredTimeZone());
+
+        this.Status = SOrderStatus::Draft;
+        this.TotalAmount = 0;
+    }
+
+]]></Source>
+			</Method>
+			<Method>
+				<Name>find</Name>
+				<Source><![CDATA[
+    /// <summary>
+    /// Finds an order record by OrderId.
+    /// </summary>
+    /// <param name="_orderId">Order identifier.</param>
+    /// <param name="_forUpdate">Selects record for update.</param>
+    /// <returns>Found SOrderTable record.</returns>
+    public static SOrderTable find(
+        SOrderID _orderId,
+        boolean _forUpdate = false)
+    {
+        SOrderTable orderTable;
+
+        if (_orderId)
+        {
+            if (_forUpdate)
+            {
+                orderTable.selectForUpdate(true);
+            }
+
+            select firstOnly orderTable
+                where orderTable.OrderID == _orderId;
+        }
+
+        return orderTable;
+    }
+
+]]></Source>
+			</Method>
+			<Method>
+				<Name>exist</Name>
+				<Source><![CDATA[
+    /// <summary>
+    /// Checks whether an order exists.
+    /// </summary>
+    /// <param name="_orderId">Order identifier.</param>
+    /// <returns>True if order exists, otherwise false.</returns>
+    public static boolean exist(SOrderID _orderId)
+    {
+        return SOrderTable::find(_orderId).RecId != 0;
+    }
+
+]]></Source>
+			</Method>
+			<Method>
+				<Name>validateField</Name>
+				<Source><![CDATA[
+    public boolean validateField(FieldId _fieldId)
+    {
+        boolean ret = super(_fieldId);
+
+        switch (_fieldId)
+        {
+            case fieldNum(SOrderTable, CustAccount):
+
+                if (ret &&
+                    this.CustAccount &&
+                    !CustTable::find(this.CustAccount).RecId)
+                {
+                    ret = checkFailed("@SLabels:SCustomerNotFound");
+                }
+
+                break;
+        }
+
+        return ret;
+    }
+
+]]></Source>
+			</Method>
+			<Method>
+				<Name>validateWrite</Name>
+				<Source><![CDATA[
+    public boolean validateWrite()
+    {
+        boolean ret = super();
+
+        if (!ret)
+        {
+            return false;
+        }
+
+        if (!this.OrderID)
+        {
+            return checkFailed("@SLabels:SOrderIDRequired");
+        }
+
+        if (!this.CustAccount)
+        {
+            return checkFailed("@SLabels:SCustomerAccountRequired");
+        }
+
+        if (!this.OrderDate)
+        {
+            return checkFailed("@SLabels:SOrderDateRequired");
+        }
+
+        if (this.RecId &&
+            this.orig().Status != SOrderStatus::Draft)
+        {
+            return checkFailed("@SLabels:SOnlyDraftOrderCanBeModified");
+        }
+
+        return true;
+    }
+
+]]></Source>
+			</Method>
+			<Method>
+				<Name>validateDelete</Name>
+				<Source><![CDATA[
+    public boolean validateDelete()
+    {
+        boolean ret = super();
+
+        if (!ret)
+        {
+            return false;
+        }
+
+        if (this.Status != SOrderStatus::Draft)
+        {
+            return checkFailed("@SLabels:SOnlyDraftOrderCanBeDeleted");
+        }
+
+        return true;
+    }
+
+]]></Source>
+			</Method>
+			<Method>
+				<Name>calculateTotalAmount</Name>
+				<Source><![CDATA[
+    public void calculateTotalAmount()
+    {
+        SOrderLine orderLine;
+        AmountCur totalAmount;
+
+        select sum(LineAmount) from orderLine
+            where orderLine.OrderID == this.OrderID;
+
+        totalAmount = orderLine.LineAmount;
+
+        if (this.TotalAmount != totalAmount)
+        {
+            this.TotalAmount = totalAmount;
+        }
+    }
+
+]]></Source>
+			</Method>
+		</Methods>
+	</SourceCode>
+	<DeveloperDocumentation>@SLabels:SOrderTableDocumentation</DeveloperDocumentation>
+	<Label>@SLabels:SOrders</Label>
+	<SubscriberAccessLevel>
+		<Read>Allow</Read>
+	</SubscriberAccessLevel>
+	<TitleField1>OrderID</TitleField1>
+	<AllowRowVersionChangeTracking>Yes</AllowRowVersionChangeTracking>
+	<ReplacementKey>OrderIdIdx</ReplacementKey>
+	<DeleteActions>
+		<AxTableDeleteAction>
+			<Name>SOrderLineDeleteAction</Name>
+			<DeleteAction>Cascade</DeleteAction>
+			<Relation>SOrderTableRelation</Relation>
+			<Table>SOrderLine</Table>
+			<Tags></Tags>
+		</AxTableDeleteAction>
+	</DeleteActions>
+	<FieldGroups>
+		<AxTableFieldGroup>
+			<Name>AutoReport</Name>
+			<Fields>
+				<AxTableFieldGroupField>
+					<DataField>OrderID</DataField>
+				</AxTableFieldGroupField>
+				<AxTableFieldGroupField>
+					<DataField>CustAccount</DataField>
+				</AxTableFieldGroupField>
+				<AxTableFieldGroupField>
+					<DataField>OrderDate</DataField>
+				</AxTableFieldGroupField>
+				<AxTableFieldGroupField>
+					<DataField>Status</DataField>
+				</AxTableFieldGroupField>
+				<AxTableFieldGroupField>
+					<DataField>TotalAmount</DataField>
+				</AxTableFieldGroupField>
+				<AxTableFieldGroupField>
+					<DataField>ApprovedDate</DataField>
+				</AxTableFieldGroupField>
+			</Fields>
+		</AxTableFieldGroup>
+		<AxTableFieldGroup>
+			<Name>AutoLookup</Name>
+			<Fields />
+		</AxTableFieldGroup>
+		<AxTableFieldGroup>
+			<Name>AutoIdentification</Name>
+			<Fields>
+				<AxTableFieldGroupField>
+					<DataField>OrderID</DataField>
+				</AxTableFieldGroupField>
+			</Fields>
+		</AxTableFieldGroup>
+		<AxTableFieldGroup>
+			<Name>AutoSummary</Name>
+			<Fields />
+		</AxTableFieldGroup>
+		<AxTableFieldGroup>
+			<Name>AutoBrowse</Name>
+			<Fields />
+		</AxTableFieldGroup>
+		<AxTableFieldGroup>
+			<Name>Overview</Name>
+			<Label>@SLabels:SOrder</Label>
+			<Fields>
+				<AxTableFieldGroupField>
+					<DataField>OrderID</DataField>
+				</AxTableFieldGroupField>
+				<AxTableFieldGroupField>
+					<DataField>CustAccount</DataField>
+				</AxTableFieldGroupField>
+				<AxTableFieldGroupField>
+					<DataField>OrderDate</DataField>
+				</AxTableFieldGroupField>
+				<AxTableFieldGroupField>
+					<DataField>Status</DataField>
+				</AxTableFieldGroupField>
+				<AxTableFieldGroupField>
+					<DataField>TotalAmount</DataField>
+				</AxTableFieldGroupField>
+			</Fields>
+		</AxTableFieldGroup>
+		<AxTableFieldGroup>
+			<Name>General</Name>
+			<Label>@SLabels:SOrder</Label>
+			<Fields>
+				<AxTableFieldGroupField>
+					<DataField>CustAccount</DataField>
+				</AxTableFieldGroupField>
+				<AxTableFieldGroupField>
+					<DataField>OrderDate</DataField>
+				</AxTableFieldGroupField>
+				<AxTableFieldGroupField>
+					<DataField>Status</DataField>
+				</AxTableFieldGroupField>
+			</Fields>
+		</AxTableFieldGroup>
+		<AxTableFieldGroup>
+			<Name>Financial</Name>
+			<Label>@SLabels:SFinancial</Label>
+			<Fields>
+				<AxTableFieldGroupField>
+					<DataField>TotalAmount</DataField>
+				</AxTableFieldGroupField>
+			</Fields>
+		</AxTableFieldGroup>
+	</FieldGroups>
+	<Fields>
+		<AxTableField xmlns=""
+			i:type="AxTableFieldString">
+			<Name>OrderID</Name>
+			<ExtendedDataType>SOrderID</ExtendedDataType>
+			<IgnoreEDTRelation>Yes</IgnoreEDTRelation>
+		</AxTableField>
+		<AxTableField xmlns=""
+			i:type="AxTableFieldString">
+			<Name>CustAccount</Name>
+			<ExtendedDataType>CustAccount</ExtendedDataType>
+			<IgnoreEDTRelation>Yes</IgnoreEDTRelation>
+		</AxTableField>
+		<AxTableField xmlns=""
+			i:type="AxTableFieldDate">
+			<Name>OrderDate</Name>
+			<ExtendedDataType>TransDate</ExtendedDataType>
+			<IgnoreEDTRelation>Yes</IgnoreEDTRelation>
+		</AxTableField>
+		<AxTableField xmlns=""
+			i:type="AxTableFieldEnum">
+			<Name>Status</Name>
+			<EnumType>SOrderStatus</EnumType>
+		</AxTableField>
+		<AxTableField xmlns=""
+			i:type="AxTableFieldReal">
+			<Name>TotalAmount</Name>
+			<ExtendedDataType>AmountCur</ExtendedDataType>
+			<IgnoreEDTRelation>Yes</IgnoreEDTRelation>
+		</AxTableField>
+		<AxTableField xmlns=""
+			i:type="AxTableFieldDate">
+			<Name>ApprovedDate</Name>
+			<ExtendedDataType>TransDate</ExtendedDataType>
+			<IgnoreEDTRelation>Yes</IgnoreEDTRelation>
+		</AxTableField>
+	</Fields>
+	<FullTextIndexes />
+	<Indexes>
+		<AxTableIndex>
+			<Name>OrderIdIdx</Name>
+			<AlternateKey>Yes</AlternateKey>
+			<Fields>
+				<AxTableIndexField>
+					<DataField>OrderID</DataField>
+				</AxTableIndexField>
+			</Fields>
+		</AxTableIndex>
+		<AxTableIndex>
+			<Name>CustAccountIdx</Name>
+			<AllowDuplicates>Yes</AllowDuplicates>
+			<Fields>
+				<AxTableIndexField>
+					<DataField>CustAccount</DataField>
+				</AxTableIndexField>
+			</Fields>
+		</AxTableIndex>
+	</Indexes>
+	<Mappings />
+	<Relations>
+		<AxTableRelation>
+			<Name>CustTable</Name>
+			<Cardinality>ZeroMore</Cardinality>
+			<RelatedTable>CustTable</RelatedTable>
+			<RelatedTableCardinality>ExactlyOne</RelatedTableCardinality>
+			<RelationshipType>Association</RelationshipType>
+			<Constraints>
+				<AxTableRelationConstraint xmlns=""
+					i:type="AxTableRelationConstraintField">
+					<Name>CustAccount</Name>
+					<Field>CustAccount</Field>
+					<RelatedField>AccountNum</RelatedField>
+				</AxTableRelationConstraint>
+			</Constraints>
+		</AxTableRelation>
+	</Relations>
+	<StateMachines />
+</AxTable>

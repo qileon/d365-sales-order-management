@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AxClass xmlns:i="http://www.w3.org/2001/XMLSchema-instance">
+	<Name>SNumberSeqModule</Name>
+	<SourceCode>
+		<Declaration><![CDATA[
+/// <summary>
+/// Defines the number sequence module for the sales order management module.
+/// </summary>
+internal final class SNumberSeqModule extends NumberSeqApplicationModule
+{
+}
+]]></Declaration>
+		<Methods>
+			<Method>
+				<Name>loadModule</Name>
+				<Source><![CDATA[
+    /// <summary>
+    /// Loads the number sequence references for the order module.
+    /// </summary>
+    public void loadModule()
+    {
+        NumberSeqDatatype datatype;
+
+        datatype = NumberSeqDatatype::construct();
+
+        datatype.parmDatatypeId(extendedTypeNum(SOrderID));
+        datatype.parmReferenceHelp("@SLabels:SOrderID");
+        datatype.parmWizardIsContinuous(false);
+        datatype.parmWizardIsManual(NoYes::No);
+        datatype.parmWizardIsChangeDownAllowed(NoYes::No);
+        datatype.parmWizardIsChangeUpAllowed(NoYes::No);
+        datatype.parmSortField(1);
+
+        this.create(datatype);
+    }
+
+]]></Source>
+			</Method>
+			<Method>
+				<Name>numberSeqModule</Name>
+				<Source><![CDATA[
+    /// <summary>
+    /// Returns the module identifier.
+    /// </summary>
+    /// <returns>
+    /// The sales order number sequence module identifier.
+    /// </returns>
+    public NumberSeqModule numberSeqModule()
+    {
+        return NumberSeqModule::SOrder;
+    }
+
+]]></Source>
+			</Method>
+		</Methods>
+	</SourceCode>
+</AxClass>

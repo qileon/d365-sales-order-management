@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AxLabelFile xmlns:i="http://www.w3.org/2001/XMLSchema-instance">
+	<Name>SLabels_en-US</Name>
+	<LabelContentFileName>SLabels.en-US.label.txt</LabelContentFileName>
+	<LabelFileId>SLabels</LabelFileId>
+	<RelativeUriInModelStore>Tiryaki\Tiryaki\AxLabelFile\LabelResources\en-US\SLabels.en-US.label.txt</RelativeUriInModelStore>
+</AxLabelFile>

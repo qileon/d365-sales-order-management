@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AxSecurityPrivilege xmlns:i="http://www.w3.org/2001/XMLSchema-instance">
+	<Name>SOrderMaintainPrivilege</Name>
+	<Label>@SLabels:SOrderMaintainPrivilege</Label>
+	<DataEntityPermissions />
+	<DirectAccessPermissions>
+		<AxSecurityDataEntityReference>
+			<Grant>
+				<Correct>Allow</Correct>
+				<Create>Allow</Create>
+				<Delete>Allow</Delete>
+				<Read>Allow</Read>
+				<Update>Allow</Update>
+			</Grant>
+			<GrantCurrentData>
+				<Correct>Allow</Correct>
+				<Create>Allow</Create>
+				<Delete>Allow</Delete>
+				<Read>Allow</Read>
+				<Update>Allow</Update>
+			</GrantCurrentData>
+			<Name>SOrderTable</Name>
+			<Fields />
+		</AxSecurityDataEntityReference>
+		<AxSecurityDataEntityReference>
+			<Grant>
+				<Correct>Allow</Correct>
+				<Create>Allow</Create>
+				<Delete>Allow</Delete>
+				<Read>Allow</Read>
+				<Update>Allow</Update>
+			</Grant>
+			<GrantCurrentData>
+				<Correct>Allow</Correct>
+				<Create>Allow</Create>
+				<Delete>Allow</Delete>
+				<Read>Allow</Read>
+				<Update>Allow</Update>
+			</GrantCurrentData>
+			<Name>SOrderLine</Name>
+			<Fields />
+		</AxSecurityDataEntityReference>
+	</DirectAccessPermissions>
+	<EntryPoints>
+		<AxSecurityEntryPointReference>
+			<Name>SOrderTableMenuItem</Name>
+			<Grant>
+				<Read>Allow</Read>
+			</Grant>
+			<GrantCurrentData>
+				<Read>Allow</Read>
+			</GrantCurrentData>
+			<ObjectName>SOrderTableMenuItem</ObjectName>
+			<ObjectType>MenuItemDisplay</ObjectType>
+			<Forms>
+				<AxSecurityEntryPointReferenceForm>
+					<Name>SOrderTableForm</Name>
+					<Controls />
+					<DataSources />
+				</AxSecurityEntryPointReferenceForm>
+			</Forms>
+		</AxSecurityEntryPointReference>
+		<AxSecurityEntryPointReference>
+			<Name>SOrderParametersMenuItem</Name>
+			<Grant>
+				<Read>Allow</Read>
+			</Grant>
+			<GrantCurrentData>
+				<Read>Allow</Read>
+			</GrantCurrentData>
+			<ObjectName>SOrderParametersMenuItem</ObjectName>
+			<ObjectType>MenuItemDisplay</ObjectType>
+			<Forms>
+				<AxSecurityEntryPointReferenceForm>
+					<Name>SOrderParametersForm</Name>
+					<Controls />
+					<DataSources />
+				</AxSecurityEntryPointReferenceForm>
+			</Forms>
+		</AxSecurityEntryPointReference>
+	</EntryPoints>
+	<FormControlOverrides />
+</AxSecurityPrivilege>

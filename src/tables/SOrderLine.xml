@@ -1,0 +1,523 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AxTable xmlns:i="http://www.w3.org/2001/XMLSchema-instance">
+	<Name>SOrderLine</Name>
+	<SourceCode>
+		<Declaration><![CDATA[
+public class SOrderLine extends Common
+{
+}
+]]></Declaration>
+		<Methods>
+			<Method>
+				<Name>shouldThrowExceptionOnZeroDelete</Name>
+				<Source><![CDATA[
+    public boolean shouldThrowExceptionOnZeroDelete()
+    {
+        return true;
+    }
+
+]]></Source>
+			</Method>
+			<Method>
+				<Name>initValue</Name>
+				<Source><![CDATA[
+    public void initValue()
+    {
+        super();
+        this.Quantity = 1;
+        this.UnitPrice = 0;
+        this.LineAmount = 0;
+    }
+
+]]></Source>
+			</Method>
+			<Method>
+				<Name>calculateLineAmount</Name>
+				<Source><![CDATA[
+    private void calculateLineAmount()
+    {
+        this.LineAmount = this.Quantity * this.UnitPrice;
+    }
+
+]]></Source>
+			</Method>
+			<Method>
+				<Name>modifiedField</Name>
+				<Source><![CDATA[
+    public void modifiedField(FieldId _fieldId)
+    {
+        super(_fieldId);
+        switch (_fieldId)
+        {
+            case fieldNum(SOrderLine, Quantity):
+            case fieldNum(SOrderLine, UnitPrice):
+                this.calculateLineAmount();
+                break;
+        }
+    }
+
+]]></Source>
+			</Method>
+			<Method>
+				<Name>validateField</Name>
+				<Source><![CDATA[
+    public boolean validateField(FieldId _fieldId)
+    {
+        boolean ret = super(_fieldId);
+        switch (_fieldId)
+        {
+            case fieldNum(SOrderLine, Quantity):
+                if (this.Quantity <= 0)
+                {
+                    ret = checkFailed("@SLabels:SQuantityMustBePositive");
+                }
+                else if (this.Quantity > 100)
+                {
+                    ret = checkFailed("@SLabels:SQuantityCannotExceedMaximum");
+                }
+                else if (this.UnitPrice == 0 && this.Quantity > 10)
+                {
+                    ret = checkFailed("@SLabels:SFreeUnitQuantityExceedMax");
+                }
+                break;
+            case fieldNum(SOrderLine, UnitPrice):
+                if (this.UnitPrice < 0)
+                {
+                    ret = checkFailed("@SLabels:SUnitPriceCannotBeNegative");
+                }
+                break;
+            case fieldNum(SOrderLine, OrderID):
+                if (this.RecId && this.OrderID != this.orig().OrderID)
+                {
+                    ret = checkFailed("@SLabels:SOrderIdCannotBeChanged");
+                }
+                break;
+            case fieldNum(SOrderLine, LineNum):
+                if (this.RecId && this.LineNum != this.orig().LineNum)
+                {
+                    ret = checkFailed("@SLabels:SLineNumCannotBeChanged");
+                }
+                break;
+            case fieldNum(SOrderLine, ItemID):
+                if (this.RecId && this.ItemID != this.orig().ItemID)
+                {
+                    ret = checkFailed("@SLabels:SItemIdCannotBeChanged");
+                }
+                break;
+        }
+        return ret;
+    }
+
+]]></Source>
+			</Method>
+			<Method>
+				<Name>validateWrite</Name>
+				<Source><![CDATA[
+    public boolean validateWrite()
+    {
+        boolean ret = super();
+        SOrderTable orderTable;
+        SOrderLine orderLine;
+        ITMItemCode itmItemCode;
+        int64 lineCount;
+
+        if (!ret)
+        {
+            return false;
+        }
+
+        if (!this.OrderID)
+        {
+            return checkFailed("@SLabels:SOrderIdRequired");
+        }
+
+        orderTable = SOrderTable::find(this.OrderID);
+        if (!orderTable.RecId)
+        {
+            return checkFailed("@SLabels:SOrderNotFound");
+        }
+
+        if (orderTable.Status != SOrderStatus::Draft)
+        {
+            return checkFailed("@SLabels:SOnlyDraftOrderCanBeModified");
+        }
+
+        if (!this.ItemID)
+        {
+            return checkFailed("@SLabels:SItemIdRequired");
+        }
+
+        if (this.Quantity <= 0)
+        {
+            return checkFailed("@SLabels:SQuantityMustBePositive");
+        }
+
+        if (this.Quantity > 100)
+        {
+            return checkFailed("@SLabels:SQuantityCannotExceedMaximum");
+        }
+
+        if (this.UnitPrice < 0)
+        {
+            return checkFailed("@SLabels:SUnitPriceCannotBeNegative");
+        }
+
+        if (this.UnitPrice > 0)
+        {
+            select firstonly itmItemCode
+                where itmItemCode.Code == this.ItemID;
+
+            if (itmItemCode.RecId && itmItemCode.MinimumPrice > 0
+                && this.UnitPrice < itmItemCode.MinimumPrice)
+            {
+                return checkFailed(strFmt("Unit price for %1 must be at least %2.",
+                    this.ItemID, itmItemCode.MinimumPrice));
+            }
+        }
+
+        if (this.UnitPrice == 0 && this.Quantity > 10)
+        {
+            return checkFailed("@SLabels:SFreeUnitQuantityExceedMax");
+        }
+
+        // Max 5 lines per order
+        if (!this.RecId)
+        {
+            select count(RecId) from orderLine
+                where orderLine.OrderID == this.OrderID;
+            lineCount = orderLine.RecId;
+
+            if (lineCount >= 5)
+            {
+                return checkFailed("@SLabels:SMaximumLineCountExceeded");
+            }
+        }
+
+        return true;
+    }
+
+]]></Source>
+			</Method>
+			<Method>
+				<Name>validateDelete</Name>
+				<Source><![CDATA[
+    public boolean validateDelete()
+    {
+        boolean ret = super();
+        SOrderTable orderTable;
+
+        if (!ret)
+        {
+            return false;
+        }
+
+        orderTable = SOrderTable::find(this.OrderID);
+        if (orderTable.Status != SOrderStatus::Draft)
+        {
+            ret = checkFailed("@SLabels:SOnlyDraftOrderCanBeDeleted");
+        }
+
+        return ret;
+    }
+
+]]></Source>
+			</Method>
+			<Method>
+				<Name>insert</Name>
+				<Source><![CDATA[
+    public void insert()
+    {
+        SOrderTable orderTable;
+
+        if (!this.LineNum)
+        {
+            this.LineNum = SOrderLine::nextLineNum(this.OrderID);
+        }
+
+        this.calculateLineAmount();
+        ttsBegin;
+        super();
+        orderTable = SOrderTable::find(this.OrderID, true);
+        if (orderTable.RecId)
+        {
+            orderTable.calculateTotalAmount();
+            orderTable.update();
+        }
+        ttsCommit;
+    }
+
+]]></Source>
+			</Method>
+			<Method>
+				<Name>update</Name>
+				<Source><![CDATA[
+    public void update()
+    {
+        SOrderTable orderTable;
+        this.calculateLineAmount();
+        ttsBegin;
+        super();
+        orderTable = SOrderTable::find(this.OrderID, true);
+        if (orderTable.RecId)
+        {
+            orderTable.calculateTotalAmount();
+            orderTable.update();
+        }
+        ttsCommit;
+    }
+
+]]></Source>
+			</Method>
+			<Method>
+				<Name>delete</Name>
+				<Source><![CDATA[
+    public void delete()
+    {
+        SOrderID orderId = this.OrderID;
+        SOrderTable orderTable;
+        ttsBegin;
+        super();
+        orderTable = SOrderTable::find(orderId, true);
+        if (orderTable.RecId)
+        {
+            orderTable.calculateTotalAmount();
+            orderTable.update();
+        }
+        ttsCommit;
+    }
+
+]]></Source>
+			</Method>
+			<Method>
+				<Name>nextLineNum</Name>
+				<Source><![CDATA[
+    /// <summary>
+    /// Calculates the next line number for the sales order line.
+    /// </summary>
+    /// <param name="_orderId">The sales order ID.</param>
+    /// <returns>The next available line number.</returns>
+    public static LineNum nextLineNum(SOrderID _orderId)
+    {
+        SOrderLine orderLine;
+
+        select maxOf(LineNum) from orderLine
+            where orderLine.OrderID == _orderId;
+
+        return orderLine.LineNum + 1;
+    }
+
+]]></Source>
+			</Method>
+		</Methods>
+	</SourceCode>
+	<DeveloperDocumentation>@SLabels:SOrderLineDeveloperDocumentation</DeveloperDocumentation>
+	<Label>@SLabels:SOrderLines</Label>
+	<SubscriberAccessLevel>
+		<Read>Allow</Read>
+	</SubscriberAccessLevel>
+	<TitleField1>ItemID</TitleField1>
+	<AllowRowVersionChangeTracking>Yes</AllowRowVersionChangeTracking>
+	<ReplacementKey>OrderLineIdx</ReplacementKey>
+	<DeleteActions />
+	<FieldGroups>
+		<AxTableFieldGroup>
+			<Name>AutoReport</Name>
+			<Fields>
+				<AxTableFieldGroupField>
+					<DataField>OrderID</DataField>
+				</AxTableFieldGroupField>
+				<AxTableFieldGroupField>
+					<DataField>LineNum</DataField>
+				</AxTableFieldGroupField>
+				<AxTableFieldGroupField>
+					<DataField>ItemID</DataField>
+				</AxTableFieldGroupField>
+				<AxTableFieldGroupField>
+					<DataField>Quantity</DataField>
+				</AxTableFieldGroupField>
+				<AxTableFieldGroupField>
+					<DataField>UnitPrice</DataField>
+				</AxTableFieldGroupField>
+				<AxTableFieldGroupField>
+					<DataField>WarehouseId</DataField>
+				</AxTableFieldGroupField>
+			</Fields>
+		</AxTableFieldGroup>
+		<AxTableFieldGroup>
+			<Name>AutoLookup</Name>
+			<Fields />
+		</AxTableFieldGroup>
+		<AxTableFieldGroup>
+			<Name>AutoIdentification</Name>
+			<Fields>
+				<AxTableFieldGroupField>
+					<DataField>OrderID</DataField>
+				</AxTableFieldGroupField>
+				<AxTableFieldGroupField>
+					<DataField>LineNum</DataField>
+				</AxTableFieldGroupField>
+			</Fields>
+		</AxTableFieldGroup>
+		<AxTableFieldGroup>
+			<Name>AutoSummary</Name>
+			<Fields />
+		</AxTableFieldGroup>
+		<AxTableFieldGroup>
+			<Name>AutoBrowse</Name>
+			<Fields />
+		</AxTableFieldGroup>
+		<AxTableFieldGroup>
+			<Name>Overview</Name>
+			<Label>@SLabels:SOrderLineOverview</Label>
+			<Fields>
+				<AxTableFieldGroupField>
+					<DataField>LineNum</DataField>
+				</AxTableFieldGroupField>
+				<AxTableFieldGroupField>
+					<DataField>ItemID</DataField>
+				</AxTableFieldGroupField>
+				<AxTableFieldGroupField>
+					<DataField>Quantity</DataField>
+				</AxTableFieldGroupField>
+				<AxTableFieldGroupField>
+					<DataField>UnitPrice</DataField>
+				</AxTableFieldGroupField>
+				<AxTableFieldGroupField>
+					<DataField>LineAmount</DataField>
+				</AxTableFieldGroupField>
+			</Fields>
+		</AxTableFieldGroup>
+		<AxTableFieldGroup>
+			<Name>General</Name>
+			<Label>@SLabels:SOrderLineGeneral</Label>
+			<Fields>
+				<AxTableFieldGroupField>
+					<DataField>UnitPrice</DataField>
+				</AxTableFieldGroupField>
+				<AxTableFieldGroupField>
+					<DataField>Quantity</DataField>
+				</AxTableFieldGroupField>
+				<AxTableFieldGroupField>
+					<DataField>ItemID</DataField>
+				</AxTableFieldGroupField>
+			</Fields>
+		</AxTableFieldGroup>
+		<AxTableFieldGroup>
+			<Name>Financial</Name>
+			<Label>@SLabels:SOrderLineFinancial</Label>
+			<Fields>
+				<AxTableFieldGroupField>
+					<DataField>UnitPrice</DataField>
+				</AxTableFieldGroupField>
+				<AxTableFieldGroupField>
+					<DataField>LineAmount</DataField>
+				</AxTableFieldGroupField>
+			</Fields>
+		</AxTableFieldGroup>
+	</FieldGroups>
+	<Fields>
+		<AxTableField xmlns=""
+			i:type="AxTableFieldString">
+			<Name>OrderID</Name>
+			<ExtendedDataType>SOrderID</ExtendedDataType>
+			<IgnoreEDTRelation>Yes</IgnoreEDTRelation>
+		</AxTableField>
+		<AxTableField xmlns=""
+			i:type="AxTableFieldReal">
+			<Name>LineNum</Name>
+			<AllowEdit>No</AllowEdit>
+			<AllowEditOnCreate>No</AllowEditOnCreate>
+			<ExtendedDataType>LineNum</ExtendedDataType>
+			<IgnoreEDTRelation>Yes</IgnoreEDTRelation>
+			<Label>@SLabels:SLineNum</Label>
+		</AxTableField>
+		<AxTableField xmlns=""
+			i:type="AxTableFieldString">
+			<Name>ItemID</Name>
+			<ExtendedDataType>ItemId</ExtendedDataType>
+			<IgnoreEDTRelation>Yes</IgnoreEDTRelation>
+			<Label>@SLabels:SItemID</Label>
+			<Mandatory>Yes</Mandatory>
+		</AxTableField>
+		<AxTableField xmlns=""
+			i:type="AxTableFieldReal">
+			<Name>Quantity</Name>
+			<ExtendedDataType>Qty</ExtendedDataType>
+			<IgnoreEDTRelation>Yes</IgnoreEDTRelation>
+			<Label>@SLabels:SQuantity</Label>
+			<Mandatory>Yes</Mandatory>
+		</AxTableField>
+		<AxTableField xmlns=""
+			i:type="AxTableFieldReal">
+			<Name>UnitPrice</Name>
+			<ExtendedDataType>UnitPrice</ExtendedDataType>
+			<IgnoreEDTRelation>Yes</IgnoreEDTRelation>
+			<Label>@SLabels:SUnitPrice</Label>
+			<Mandatory>Yes</Mandatory>
+		</AxTableField>
+		<AxTableField xmlns=""
+			i:type="AxTableFieldReal">
+			<Name>LineAmount</Name>
+			<ExtendedDataType>AmountCur</ExtendedDataType>
+			<IgnoreEDTRelation>Yes</IgnoreEDTRelation>
+			<Label>@SLabels:SLineAmount</Label>
+		</AxTableField>
+		<AxTableField xmlns=""
+			i:type="AxTableFieldString">
+			<Name>WarehouseId</Name>
+			<ExtendedDataType>InventLocationId</ExtendedDataType>
+			<IgnoreEDTRelation>Yes</IgnoreEDTRelation>
+			<Label>@SLabels:SOrderLineWarehouseIdLabel</Label>
+			<Mandatory>Yes</Mandatory>
+		</AxTableField>
+	</Fields>
+	<FullTextIndexes />
+	<Indexes>
+		<AxTableIndex>
+			<Name>OrderLineIdx</Name>
+			<AlternateKey>Yes</AlternateKey>
+			<Fields>
+				<AxTableIndexField>
+					<DataField>OrderID</DataField>
+				</AxTableIndexField>
+				<AxTableIndexField>
+					<DataField>LineNum</DataField>
+				</AxTableIndexField>
+			</Fields>
+		</AxTableIndex>
+	</Indexes>
+	<Mappings />
+	<Relations>
+		<AxTableRelation>
+			<Name>SOrderTableRelation</Name>
+			<Cardinality>ZeroMore</Cardinality>
+			<RelatedTable>SOrderTable</RelatedTable>
+			<RelatedTableCardinality>ExactlyOne</RelatedTableCardinality>
+			<RelationshipType>Association</RelationshipType>
+			<Constraints>
+				<AxTableRelationConstraint xmlns=""
+					i:type="AxTableRelationConstraintField">
+					<Name>OrderID</Name>
+					<Field>OrderID</Field>
+					<RelatedField>OrderID</RelatedField>
+				</AxTableRelationConstraint>
+			</Constraints>
+		</AxTableRelation>
+		<AxTableRelation>
+			<Name>InventTableRelation</Name>
+			<Cardinality>ZeroMore</Cardinality>
+			<RelatedTable>InventTable</RelatedTable>
+			<RelatedTableCardinality>ExactlyOne</RelatedTableCardinality>
+			<RelationshipType>Association</RelationshipType>
+			<Constraints>
+				<AxTableRelationConstraint xmlns=""
+					i:type="AxTableRelationConstraintField">
+					<Name>ItemID</Name>
+					<Field>ItemID</Field>
+					<RelatedField>ItemId</RelatedField>
+				</AxTableRelationConstraint>
+			</Constraints>
+		</AxTableRelation>
+	</Relations>
+	<StateMachines />
+</AxTable>

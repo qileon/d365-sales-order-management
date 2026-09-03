@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AxClass xmlns:i="http://www.w3.org/2001/XMLSchema-instance">
+	<Name>SOrderCustTable_Extension</Name>
+	<SourceCode>
+		<Declaration><![CDATA[
+/// <summary>
+/// Extension to CustTable to display order count for each customer.
+/// </summary>
+[ExtensionOf(tableStr(CustTable))]
+final class SOrderCustTable_Extension
+{
+}
+]]></Declaration>
+		<Methods>
+			<Method>
+				<Name>sOrderCount</Name>
+				<Source><![CDATA[
+    /// <summary>
+    /// Displays the count of orders for the current customer.
+    /// </summary>
+    /// <returns>The number of orders for this customer.</returns>
+    public display int sOrderCount()
+    {
+        SOrderTable orderTable;
+        select count(RecId) from orderTable
+            where orderTable.CustAccount == this.AccountNum;
+        return any2Int(orderTable.RecId);
+    }
+
+]]></Source>
+			</Method>
+		</Methods>
+	</SourceCode>
+</AxClass>

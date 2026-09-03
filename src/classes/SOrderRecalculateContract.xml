@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AxClass xmlns:i="http://www.w3.org/2001/XMLSchema-instance">
+	<Name>SOrderRecalculateContract</Name>
+	<SourceCode>
+		<Declaration><![CDATA[
+/// <summary>
+/// Contract class for order total recalculation operation.
+/// </summary>
+[DataContract]
+internal final class SOrderRecalculateContract
+{
+    SOrderID orderId;
+
+}
+]]></Declaration>
+		<Methods>
+			<Method>
+				<Name>parmOrderId</Name>
+				<Source><![CDATA[
+    /// <summary>
+    /// Gets or sets the order ID parameter.
+    /// </summary>
+    /// <param name="_orderId">The order ID to set, or default to return the current value.</param>
+    /// <returns>The order ID.</returns>
+    [DataMember]
+    public SOrderID parmOrderId(SOrderID _orderId = orderId)
+    {
+        orderId = _orderId;
+        return orderId;
+    }
+
+]]></Source>
+			</Method>
+		</Methods>
+	</SourceCode>
+</AxClass>

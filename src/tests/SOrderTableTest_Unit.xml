@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AxClass xmlns:i="http://www.w3.org/2001/XMLSchema-instance">
+	<Name>SOrderTableTest_Unit</Name>
+	<SourceCode>
+		<Declaration><![CDATA[
+/// <summary>
+/// Unit test class for SOrderTable using SysTest framework.
+/// </summary>
+internal final class SOrderTableTest_Unit extends SysTestCase
+{
+}
+]]></Declaration>
+		<Methods>
+			<Method>
+				<Name>testInitValueStatus</Name>
+				<Source><![CDATA[
+    /// <summary>
+    /// Tests that initValue() sets Status to Draft.
+    /// </summary>
+    [SysTestMethodAttribute]
+    public void testInitValueStatus()
+    {
+        SOrderTable orderTable;
+
+        orderTable.initValue();
+        this.assertEquals(SOrderStatus::Draft, orderTable.Status);
+    }
+
+]]></Source>
+			</Method>
+			<Method>
+				<Name>testInitValueTotalAmount</Name>
+				<Source><![CDATA[
+    /// <summary>
+    /// Tests that initValue() sets TotalAmount to 0.
+    /// </summary>
+    [SysTestMethodAttribute]
+    public void testInitValueTotalAmount()
+    {
+        SOrderTable orderTable;
+
+        orderTable.initValue();
+        this.assertEquals(0, orderTable.TotalAmount);
+    }
+
+]]></Source>
+			</Method>
+			<Method>
+				<Name>testInitValueOrderDate</Name>
+				<Source><![CDATA[
+    /// <summary>
+    /// Tests that OrderDate is set after initValue().
+    /// </summary>
+    [SysTestMethodAttribute]
+    public void testInitValueOrderDate()
+    {
+        SOrderTable orderTable;
+
+        orderTable.initValue();
+        this.assertTrue(orderTable.OrderDate != dateNull());
+    }
+
+]]></Source>
+			</Method>
+		</Methods>
+	</SourceCode>
+</AxClass>

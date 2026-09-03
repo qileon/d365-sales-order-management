@@ -1,0 +1,241 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AxClass xmlns:i="http://www.w3.org/2001/XMLSchema-instance">
+	<Name>SOrderService</Name>
+	<SourceCode>
+		<Declaration><![CDATA[
+/// <summary>
+/// Provides business operations for sales orders.
+/// </summary>
+internal final class SOrderService
+{
+}
+]]></Declaration>
+		<Methods>
+			<Method>
+				<Name>approveOrder</Name>
+				<Source><![CDATA[
+    /// <summary>
+    /// Approves a draft sales order.
+    /// </summary>
+    /// <param name="_orderId">
+    /// Sales order identifier.
+    /// </param>
+    public static void approveOrder(SOrderId _orderId)
+    {
+        SOrderTable orderTable;
+        SOrderLine orderLine;
+        ITMWarehouseStock itmWarehouseStock;
+        ITMWarehouseStock itmWarehouseStock2;
+        ITMStockLog itmStockLog;
+        ITMItemCode itmItemCode;
+        str otherWarehouses;
+
+        ttsbegin;
+
+        orderTable = SOrderTable::find(_orderId, true);
+
+        if (!orderTable.RecId)
+        {
+            throw error("@SLabels:SOrderNotFound");
+        }
+
+        if (orderTable.Status != SOrderStatus::Draft)
+        {
+            throw error("@SLabels:SOnlyDraftOrderCanBeApproved");
+        }
+
+        select firstOnly RecId from orderLine
+            where orderLine.OrderId == _orderId;
+
+        if (!orderLine.RecId)
+        {
+            throw error("@SLabels:SOrderHasNoLines");
+        }
+
+        orderTable.calculateTotalAmount();
+
+        if (orderTable.TotalAmount <= 0)
+        {
+            throw error("@SLabels:SOrderTotalMustBePositive");
+        }
+
+        while select orderLine
+            where orderLine.OrderId == _orderId
+        {
+            if (orderLine.ItemID && orderLine.WarehouseId)
+            {
+                select forupdate firstonly itmWarehouseStock
+                    where itmWarehouseStock.Code == orderLine.ItemID
+                       && itmWarehouseStock.WarehouseId == orderLine.WarehouseId;
+
+                if (!itmWarehouseStock || itmWarehouseStock.Quantity < orderLine.Quantity)
+                {
+                    otherWarehouses = "";
+
+                    while select itmWarehouseStock2
+                        where itmWarehouseStock2.Code == orderLine.ItemID
+                    {
+                        if (itmWarehouseStock2.WarehouseId != orderLine.WarehouseId
+                            && itmWarehouseStock2.Quantity > 0)
+                        {
+                            if (otherWarehouses)
+                            {
+                                otherWarehouses += ", ";
+                            }
+                            otherWarehouses += strFmt("%1 (%2)",
+                                itmWarehouseStock2.WarehouseId, itmWarehouseStock2.Quantity);
+                        }
+                    }
+
+                    if (otherWarehouses)
+                    {
+                        throw error(strFmt("Code %1 is not in stock in %2. Available in: %3.",
+                            orderLine.ItemID, orderLine.WarehouseId, otherWarehouses));
+                    }
+                    else
+                    {
+                        throw error(strFmt("Code %1 is not in stock in any warehouse.",
+                            orderLine.ItemID));
+                    }
+                }
+
+                itmWarehouseStock.Quantity -= orderLine.Quantity;
+                itmWarehouseStock.update();
+
+                itmStockLog.clear();
+                itmStockLog.Code = orderLine.ItemID;
+                itmStockLog.WarehouseId = orderLine.WarehouseId;
+                itmStockLog.Quantity = -orderLine.Quantity;
+                itmStockLog.OrderId = _orderId;
+                itmStockLog.LogDateTime = DateTimeUtil::utcNow();
+                itmStockLog.insert();
+
+                select firstonly itmItemCode
+                    where itmItemCode.Code == orderLine.ItemID;
+
+                if (itmItemCode.ReorderPoint > 0
+                    && itmItemCode.Quantity < itmItemCode.ReorderPoint)
+                {
+                    warning(strFmt("Code %1 has fallen below its reorder point. On hand: %2, reorder point: %3.",
+                        itmItemCode.Code, itmItemCode.Quantity, itmItemCode.ReorderPoint));
+                }
+            }
+        }
+
+        orderTable.Status = SOrderStatus::Approved;
+        orderTable.ApprovedDate = DateTimeUtil::getSystemDate(DateTimeUtil::getUserPreferredTimeZone());
+        orderTable.update();
+
+        ttscommit;
+
+        info("@SLabels:SOrderApproved");
+    }
+
+]]></Source>
+			</Method>
+			<Method>
+				<Name>cancelOrder</Name>
+				<Source><![CDATA[
+    /// <summary>
+    /// Cancels a draft or same-day-approved sales order.
+    /// </summary>
+    /// <param name="_orderId">
+    /// Sales order identifier.
+    /// </param>
+    public static void cancelOrder(SOrderId _orderId)
+    {
+        SOrderTable orderTable;
+        SOrderLine orderLine;
+        ITMWarehouseStock itmWarehouseStock;
+        ITMStockLog itmStockLog;
+
+        ttsbegin;
+
+        orderTable = SOrderTable::find(_orderId, true);
+
+        if (!orderTable.RecId)
+        {
+            throw error("@SLabels:SOrderNotFound");
+        }
+
+        if (orderTable.Status != SOrderStatus::Draft && orderTable.Status != SOrderStatus::Approved)
+        {
+            throw error("Only a draft or approved order can be cancelled.");
+        }
+
+        if (orderTable.Status == SOrderStatus::Approved)
+        {
+            if (orderTable.ApprovedDate != DateTimeUtil::getSystemDate(DateTimeUtil::getUserPreferredTimeZone()))
+            {
+                throw error("An approved order can only be cancelled on the same day it was approved.");
+            }
+
+            while select orderLine
+                where orderLine.OrderId == _orderId
+            {
+                if (orderLine.ItemID && orderLine.WarehouseId)
+                {
+                    select forupdate firstonly itmWarehouseStock
+                        where itmWarehouseStock.Code == orderLine.ItemID
+                           && itmWarehouseStock.WarehouseId == orderLine.WarehouseId;
+
+                    if (itmWarehouseStock)
+                    {
+                        itmWarehouseStock.Quantity += orderLine.Quantity;
+                        itmWarehouseStock.update();
+
+                        itmStockLog.clear();
+                        itmStockLog.Code = orderLine.ItemID;
+                        itmStockLog.WarehouseId = orderLine.WarehouseId;
+                        itmStockLog.Quantity = orderLine.Quantity;
+                        itmStockLog.OrderId = _orderId;
+                        itmStockLog.LogDateTime = DateTimeUtil::utcNow();
+                        itmStockLog.insert();
+                    }
+                }
+            }
+        }
+
+        orderTable.Status = SOrderStatus::Cancelled;
+        orderTable.update();
+
+        ttscommit;
+
+        info("@SLabels:SOrderCancelled");
+    }
+
+]]></Source>
+			</Method>
+			<Method>
+				<Name>recalculateTotal</Name>
+				<Source><![CDATA[
+    /// <summary>
+    /// Recalculates the total amount of a sales order.
+    /// </summary>
+    /// <param name="_orderId">
+    /// Sales order identifier.
+    /// </param>
+    public static void recalculateTotal(SOrderId _orderId)
+    {
+        SOrderTable orderTable;
+
+        ttsbegin;
+
+        orderTable = SOrderTable::find(_orderId, true);
+
+        if (!orderTable.RecId)
+        {
+            throw error("@SLabels:SOrderNotFound");
+        }
+
+        orderTable.calculateTotalAmount();
+        orderTable.update();
+
+        ttscommit;
+    }
+
+]]></Source>
+			</Method>
+		</Methods>
+	</SourceCode>
+</AxClass>

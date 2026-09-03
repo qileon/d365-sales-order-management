@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AxClass xmlns:i="http://www.w3.org/2001/XMLSchema-instance">
+	<Name>SOrderRecalculateService</Name>
+	<SourceCode>
+		<Declaration><![CDATA[
+/// <summary>
+/// Service class for order total recalculation operations.
+/// </summary>
+internal final class SOrderRecalculateService
+{
+}
+]]></Declaration>
+		<Methods>
+			<Method>
+				<Name>process</Name>
+				<Source><![CDATA[
+    /// <summary>
+    /// Recalculates the total amount for the specified order.
+    /// </summary>
+    /// <param name="_contract">Contract containing the order ID.</param>
+    public void process(SOrderRecalculateContract _contract)
+    {
+        SOrderService::recalculateTotal(_contract.parmOrderId());
+    }
+
+]]></Source>
+			</Method>
+		</Methods>
+	</SourceCode>
+</AxClass>

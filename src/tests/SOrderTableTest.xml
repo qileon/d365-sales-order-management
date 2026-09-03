@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AxClass xmlns:i="http://www.w3.org/2001/XMLSchema-instance">
+	<Name>SOrderTableTest</Name>
+	<SourceCode>
+		<Declaration><![CDATA[
+/// <summary>
+/// Test class for SOrderTable initialization.
+/// </summary>
+internal final class SOrderTableTest
+{
+}
+]]></Declaration>
+		<Methods>
+			<Method>
+				<Name>testInitValue</Name>
+				<Source><![CDATA[
+    /// <summary>
+    /// Tests default values when creating a new order.
+    /// </summary>
+    public static void testInitValue()
+    {
+        SOrderTable orderTable;
+        orderTable.initValue();
+
+        if (orderTable.Status != SOrderStatus::Draft)
+        {
+            throw Exception::Error;
+        }
+
+        if (orderTable.TotalAmount != 0)
+        {
+            throw Exception::Error;
+        }
+    }
+
+]]></Source>
+			</Method>
+			<Method>
+				<Name>main</Name>
+				<Source><![CDATA[
+    public static void main(Args _args)
+    {
+        SOrderTableTest::testInitValue();
+    }
+
+]]></Source>
+			</Method>
+		</Methods>
+	</SourceCode>
+</AxClass>

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AxSecurityDuty xmlns:i="http://www.w3.org/2001/XMLSchema-instance">
+	<Name>SOrderMaintainDuty</Name>
+	<Label>@SLabels:SOrderMaintainDuty</Label>
+	<Privileges>
+		<AxSecurityPrivilegeReference>
+			<Name>SOrderMaintainPrivilege</Name>
+		</AxSecurityPrivilegeReference>
+		<AxSecurityPrivilegeReference>
+			<Name>SOrderHeaderEntityMaintain</Name>
+		</AxSecurityPrivilegeReference>
+		<AxSecurityPrivilegeReference>
+			<Name>SOrderLineEntityMaintain</Name>
+		</AxSecurityPrivilegeReference>
+	</Privileges>
+</AxSecurityDuty>
