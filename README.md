@@ -61,7 +61,7 @@ src/
 docs/
   scope.md              Notes about included artifacts and module boundaries
 screenshots/
-  Demo screenshots can be added here
+  Cropped demo screenshots showing the sales order form, approval flow, and line validation
 ```
 
 ## Main Business Flow
