@@ -8,6 +8,12 @@ This repository is a cleaned public snapshot of the SOrder module from a larger 
 
 This project was developed during my internship while learning Dynamics 365 Finance & Operations and X++ for the first time. It represents the foundation module where I practiced D365 application patterns such as custom tables, forms, service classes, number sequences, data entities, security configuration, and unit test style classes.
 
+## Article
+
+I wrote a detailed article about this project and the learning process behind it:
+
+[Internship Journey / Part 1: D365 Sales Order Management](https://medium.com/@siracsuz/internship-journey-part-1-d365-sales-order-management-43d62a843157)
+
 ## Features
 
 - Custom sales order header and line tables
